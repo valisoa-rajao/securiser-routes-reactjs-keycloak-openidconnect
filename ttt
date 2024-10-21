@@ -1,0 +1,24 @@
+DECLARE
+    -- Déclarer une variable VFROM pour recevoir une ligne de la table Formation
+    VFROM Formation%ROWTYPE;
+
+    -- Déclarer un curseur CURFORM pour récupérer les lignes de la table Formation
+    CURSOR CURFORM IS
+        SELECT * FROM Formation;
+BEGIN
+    -- Ouvrir le curseur
+    OPEN CURFORM;
+
+    -- Récupérer une ligne du curseur et la stocker dans VFROM
+
+    LOOP 
+    FETCH CURFORM INTO VFROM;
+
+    -- Afficher les informations récupérées (optionnel)
+    DBMS_OUTPUT.PUT_LINE('Formation: ' || VFROM.desination || ', Durée: ' || VFROM.duree || ', Frais: ' || VFROM.FraisDeFormation);
+
+     EXIT WHEN CURFORM%NOTFOUND 
+    END LOOP;
+    -- Fermer le curseur
+    CLOSE CURFORM;
+END;
