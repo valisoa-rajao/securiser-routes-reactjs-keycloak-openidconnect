@@ -9,7 +9,7 @@ const RedirectRoute = ({ kc }) => {
 
 
   useEffect(() => {
-    if (kc.authenticated) { // plan b kc.authe && kc.hasRealmrole(= ) ou kc.hasrel
+    if (kc.authenticated) { 
       setKeycloakReady(true);
 
       // Ajoute ta logique de redirection ici
@@ -22,14 +22,13 @@ const RedirectRoute = ({ kc }) => {
     // *******************la redirection **********************
     if(kc.hasRealmRole('role-admin'))
     {
-        navigate('/admin')
-    }
-
-    if(kc.hasRealmRole('role-membre'))
+      navigate('/admin')
+    }else if(kc.hasRealmRole('role-membre'))
     {
-        navigate('/membre')
+      navigate('/membre')
+    }else{
+      return <div> ............cette Utilisateur n'existe pas encore ........</div>
     }
-
 
   }else{
     return <div>Chargement de recherche  ...</div>; // Affiche un message de chargement si kc n'est pas encore prêt

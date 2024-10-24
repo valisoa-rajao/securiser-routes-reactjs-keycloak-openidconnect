@@ -11,26 +11,38 @@ import AdminAccount from './component/AdminAccount';
 import MemberAccount from './component/MemberAccount';
 
 // 1. Création de l'instance Keycloak une seule fois, à l'extérieur du composant
-
-
-
 const initOptions = {
-  url: `http://192.168.1.166:8080`,   // URL du serveur Keycloak
-  realm: `reactjs-arch-def-biblio`, // Nom du "realm" Keycloak
-  clientId: 'client-react'         // ID du client défini dans Keycloak
+  url: `http://localhost:8080`,   // URL du serveur Keycloak
+  realm: `realm-idp`, // Nom du "realm" Keycloak
+  clientId: 'client-idp'         // ID du client défini dans Keycloak
 };
 const kc = new Keycloak(initOptions);
-
-
 
 function App() {
   const [authenticated, setAuthenticated] = useState(false);  // Pour savoir si l'utilisateur est authentifié
   const [keycloakInitialized, setKeycloakInitialized] = useState(false);  // Pour éviter les réinitialisations multiples
 
+  // Fonction pour rafraîchir le token
+  const refreshToken = async () => {
+    try {
+      // Rafraîchir le token s'il expire dans les 30 prochaines secondes
+      const refreshed = await kc.updateToken(30);
+      if (refreshed) {
+        console.log('Token rafraîchi');
+        // Mettre à jour le token dans les en-têtes de toutes les requêtes
+        httpClient.defaults.headers.common['Authorization'] = `Bearer ${kc.token}`;
+      }
+    } catch (error) {
+      console.error('Échec du rafraîchissement du token', error);
+      // En cas d'échec, rediriger vers la page de déconnexion
+      kc.logout({ redirectUri: window.location.origin });
+    }
+  };
+
+  // Initialisation de Keycloak et authentification
   useEffect(() => {
     const initKeycloak = async () => {
       try {
-        // 2. Initialiser Keycloak seulement si non initialisé
         if (!keycloakInitialized) {
           const auth = await kc.init({
             onLoad: 'login-required',  // Rediriger vers la page de login si nécessaire
@@ -38,26 +50,29 @@ function App() {
             pkceMethod: 'S256'         // Utilisation de PKCE avec S256 pour plus de sécurité
           });
 
-          // 3. Si authentifié, mettre à jour l'état d'authentification
           if (auth) {
             setAuthenticated(true);
             httpClient.defaults.headers.common['Authorization'] = `Bearer ${kc.token}`;
           } else {
             window.location.reload();
           }
-
-          // 4. Marquer Keycloak comme initialisé
           setKeycloakInitialized(true);
         }
       } catch (error) {
-        console.error('Authentication Failed', error);
+        // console.error('Authentication Failed', error);
       }
     };
 
     initKeycloak();
-  }, [keycloakInitialized]); // Exécuter uniquement lorsque keycloakInitialized change
+  }, [keycloakInitialized]);
 
-  // 5. Affichage d'un écran de chargement jusqu'à ce que Keycloak soit initialisé
+  // Rafraîchir le token régulièrement toutes les 60 secondes
+  useEffect(() => {
+    const intervalId = setInterval(refreshToken, 60000); // Rafraîchir toutes les minutes
+    return () => clearInterval(intervalId); // Nettoyage à la fin
+  }, []);
+
+  // Affichage d'un écran de chargement tant que Keycloak n'est pas initialisé
   if (!keycloakInitialized) {
     return <div>Chargement de Keycloak...</div>;
   }
@@ -65,28 +80,20 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-       
-
-        {/* //Redirection automatique si aucune roote  */}
+        {/* Redirection automatique si aucune route correspond */}
         <Route path="*" element={<RedirectRoute kc={kc}/>} />
 
+        {/* Routes protégées pour l'admin */}
         <Route element={<ProtectedRouteAdmin kc={kc}/>}>
-         {/* Route pour Admin, accessible après authentification */}
           <Route path="/admin" element={<Admin kc={kc}/>} />
-
           <Route path="/admin/account" element={<AdminAccount kc={kc}/>} />
-
         </Route>
 
-
+        {/* Routes protégées pour le membre */}
         <Route element={<ProtectedRouteMembre kc={kc}/>}>
-          {/* Route pour Member */}
           <Route path="/membre" element={<Member kc={kc}/>} /> 
-
           <Route path="/membre/account" element={<MemberAccount kc={kc}/>} />
         </Route>
-
-
       </Routes>
     </BrowserRouter>
   );

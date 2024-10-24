@@ -24,7 +24,7 @@ function MemberAccount({kc})
         <div className='home'>
             <h2> Bonjour MemberAccount</h2>
     
-            <button onClick={()=> kc.logout({redirectUri: 'http://192.168.1.166:3001'})}> Se deconnecter </button>
+            <button onClick={()=> kc.logout({redirectUri: 'http://localhost:3001'})}> Se deconnecter </button>
         </div>
     )
    
